@@ -1,0 +1,110 @@
+.sidebar {
+    width: 250px;
+    min-width: 250px;
+    height: 100dvh;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-default);
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-4);
+    position: sticky;
+    top: 0;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-3);
+    margin-bottom: var(--space-8);
+}
+
+.logoIcon {
+    font-size: 28px;
+}
+
+.logoText {
+    font-size: var(--text-xl);
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    flex: 1;
+}
+
+.navItem {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    transition: all var(--transition-fast);
+}
+
+.navItem:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+}
+
+.active {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--accent-primary) !important;
+}
+
+.active:hover {
+    background: rgba(99, 102, 241, 0.15);
+}
+
+.navIcon {
+    display: flex;
+    font-size: 18px;
+    width: 24px;
+    justify-content: center;
+}
+
+.footer {
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border-default);
+}
+
+.userCard {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+}
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: var(--text-sm);
+    color: white;
+}
+
+.userName {
+    font-size: var(--text-sm);
+    font-weight: 600;
+}
+
+.userRole {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}

@@ -1,0 +1,216 @@
+.dashboard {
+  animation: fadeIn var(--transition-base) forwards;
+}
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-5);
+  margin-bottom: var(--space-8);
+}
+
+/* ===== KPI Card ===== */
+.kpiCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.kpiCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-hover);
+}
+
+.kpiCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.kpiSuccess::before {
+  background: var(--accent-success);
+}
+
+.kpiInfo::before {
+  background: var(--accent-info);
+}
+
+.kpiWarning::before {
+  background: var(--accent-warning);
+}
+
+.kpiMuted::before {
+  background: var(--text-muted);
+}
+
+.kpiDanger::before {
+  background: var(--accent-danger);
+}
+
+.kpiIcon {
+  font-size: 24px;
+  margin-bottom: var(--space-3);
+}
+
+.kpiValue {
+  font-size: var(--text-3xl);
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: var(--space-1);
+}
+
+.kpiSuccess .kpiValue {
+  color: var(--accent-success);
+}
+
+.kpiInfo .kpiValue {
+  color: var(--accent-info);
+}
+
+.kpiWarning .kpiValue {
+  color: var(--accent-warning);
+}
+
+.kpiMuted .kpiValue {
+  color: var(--text-secondary);
+}
+
+.kpiDanger .kpiValue {
+  color: var(--accent-danger);
+}
+
+.kpiLabel {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+/* ===== Content Grid ===== */
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: var(--space-6);
+}
+
+@media (max-width: 900px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Sections ===== */
+.section {
+  margin-bottom: var(--space-6);
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.sectionTitle {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.sectionLink {
+  font-size: var(--text-sm);
+  color: var(--accent-primary);
+  font-weight: 500;
+}
+
+/* ===== Contract Mini Card ===== */
+.miniCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  transition: all var(--transition-fast);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.miniCard:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-card-hover);
+}
+
+.miniCardHighlight {
+  border-left: 3px solid var(--accent-primary);
+}
+
+.miniCardTitle {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-1);
+}
+
+.miniCardTitle a {
+  color: var(--text-primary);
+}
+
+.miniCardTitle a:hover {
+  color: var(--accent-primary);
+}
+
+.miniCardMeta {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ===== Activity Card ===== */
+.activityCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  border-left: 3px solid var(--text-muted);
+  transition: all var(--transition-fast);
+}
+
+.activityCard:hover {
+  border-color: var(--border-hover);
+}
+
+.activityAuthor {
+  font-size: var(--text-sm);
+}
+
+.activityQuote {
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  font-style: italic;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.activityTime {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: var(--space-2);
+}
+
+.itemList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}

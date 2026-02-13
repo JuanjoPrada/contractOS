@@ -1,0 +1,120 @@
+.editorViewport {
+    background: #f0f2f5;
+    min-height: calc(100vh - 100px);
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+}
+
+.toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    background: #ffffff;
+    border-bottom: 1px solid #d1d5db;
+    padding: 8px 16px;
+    display: flex;
+    gap: 4px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    width: fit-content;
+}
+
+.divider {
+    width: 1px;
+    background: #e5e7eb;
+    margin: 4px 8px;
+}
+
+.toolbarButton {
+    padding: 6px;
+    border-radius: 4px;
+    color: #374151;
+    transition: all 0.2s;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toolbarButton:hover {
+    background: #f3f4f6;
+    color: #111827;
+}
+
+.isActive {
+    background: #e0e7ff;
+    color: #4f46e5;
+}
+
+.documentContainer {
+    background: white;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 30mm 25mm;
+    margin: 0 auto;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    color: #000000;
+    position: relative;
+}
+
+/* TipTap Editor Styles */
+.editor :global(.ProseMirror) {
+    outline: none;
+    min-height: 247mm;
+    font-family: 'Times New Roman', serif;
+    line-height: 1.5;
+    font-size: 11pt;
+    color: #000;
+}
+
+/* Ensure images and other things don't break the layout */
+.editor :global(.ProseMirror img) {
+    max-width: 100%;
+    height: auto;
+}
+
+.editor :global(.ProseMirror p) {
+    margin-bottom: 1em;
+}
+
+.editor :global(.ProseMirror h1) {
+    font-size: 2em;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+}
+
+.editor :global(.ProseMirror h2) {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+.editor :global(.ProseMirror ul),
+.editor :global(.ProseMirror ol) {
+    padding-left: 1.5em;
+    margin-bottom: 1em;
+}
+
+.editor :global(.ProseMirror blockquote) {
+    border-left: 3px solid #ccc;
+    padding-left: 1em;
+    margin-left: 0;
+    color: #666;
+}
+
+.saveActions {
+    position: fixed;
+    bottom: 30px;
+    right: 50px;
+    display: flex;
+    gap: 12px;
+    z-index: 300;
+}

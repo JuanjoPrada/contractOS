@@ -1,0 +1,105 @@
+.contractsPage {
+    animation: fadeIn var(--transition-base) forwards;
+}
+
+/* ===== Filter Bar ===== */
+.filterBar {
+    display: flex;
+    gap: var(--space-3);
+    align-items: center;
+    margin-bottom: var(--space-6);
+    padding: var(--space-4);
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+}
+
+.filterBar input[type="text"] {
+    flex: 1;
+    min-width: 200px;
+}
+
+.filterBar select {
+    width: auto;
+    min-width: 180px;
+}
+
+/* ===== Contract Grid ===== */
+.contractGrid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+/* ===== Contract Card ===== */
+.contractCard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    transition: all var(--transition-fast);
+}
+
+.contractCard:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-card-hover);
+    transform: translateX(4px);
+}
+
+.contractInfo {
+    flex: 1;
+    min-width: 0;
+}
+
+.contractTitle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
+}
+
+.contractTitle a {
+    font-weight: 600;
+    font-size: var(--text-base);
+    color: var(--text-primary);
+}
+
+.contractTitle a:hover {
+    color: var(--accent-primary);
+}
+
+.contractMeta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.versionCount {
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+    font-weight: 500;
+}
+
+/* ===== Contract Right ===== */
+.contractRight {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-2);
+}
+
+.contractDate {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.contractLink {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--accent-primary);
+}

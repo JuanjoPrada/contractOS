@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id               String            @id @default(cuid())
+  email            String            @unique
+  name             String?
+  role             String            @default("USER")
+  contractsCreated Contract[]        @relation("CreatedBy")
+  assignedTo       Contract[]        @relation("AssignedTo")
+  versionsCreated  ContractVersion[]
+  comments         Comment[]
+  activityLogs     ActivityLog[]
+  createdAt        DateTime          @default(now())
+}
+
+model Contract {
+  id           String            @id @default(cuid())
+  title        String
+  status       String // DRAFT, REVIEW, APPROVED, REJECTED, FINALIZED
+  category     String?           @default("General")
+  author       User              @relation("CreatedBy", fields: [authorId], references: [id])
+  authorId     String
+  assignedTo   User?             @relation("AssignedTo", fields: [assignedToId], references: [id])
+  assignedToId String?
+  versions     ContractVersion[]
+  activityLogs ActivityLog[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+model ContractVersion {
+  id            String    @id @default(cuid())
+  content       String?
+  versionNumber Int
+  fileUrl       String? // Path to Word/Docx file
+  fileName      String? // Original filename
+  contract      Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  contractId    String
+  author        User      @relation(fields: [authorId], references: [id])
+  authorId      String
+  comments      Comment[]
+  createdAt     DateTime  @default(now())
+}
+
+model Comment {
+  id        String          @id @default(cuid())
+  content   String
+  version   ContractVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  versionId String
+  author    User            @relation(fields: [authorId], references: [id])
+  authorId  String
+  createdAt DateTime        @default(now())
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  content     String? // Text content of the template
+  fileUrl     String? // Optional word file for the template
+  createdAt   DateTime @default(now())
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  action     String // CREATED, UPDATED_STATUS, ADDED_VERSION, ASSIGNED, COMMENTED
+  details    String
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  contractId String
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  createdAt  DateTime @default(now())
+}
