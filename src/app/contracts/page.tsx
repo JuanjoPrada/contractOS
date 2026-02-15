@@ -70,16 +70,18 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
                                     {contract.status}
                                 </span>
                                 <span className={styles.versionCount}>
-                                    v{contract.versions.length} versiones
+                                    v{contract.versions?.length || 0} versiones
                                 </span>
                                 <span>·</span>
-                                <span>Por {contract.author.name}</span>
+                                <span>Por {contract.author?.name || 'Desconocido'}</span>
+
                             </div>
                         </div>
                         <div className={styles.contractRight}>
                             <span className={styles.contractDate}>
-                                {contract.updatedAt.toLocaleDateString('es-ES')}
+                                {contract.updatedAt?.toLocaleDateString?.('es-ES') || 'Fecha no disponible'}
                             </span>
+
                             <Link href={`/contracts/${contract.id}`} className={styles.contractLink}>
                                 Ver Detalles →
                             </Link>

@@ -1,16 +1,12 @@
-import { prisma } from '@/lib/prisma'
+import { ContractService } from '@/lib/services/contractService'
 import styles from '@/app/page.module.css'
 import { Calendar, Bell, AlertTriangle, Clock } from 'lucide-react'
 
 export default async function RemindersPage() {
-    // Simulación de extracción de obligaciones (En una app real, buscaríamos en un campo específico)
-    // Para la demo, buscaremos contratos con fechas próximas en sus metadatos o comentarios
-    const contracts = await prisma.contract.findMany({
-        where: {
-            status: { in: ['EXECUTED', 'FINALIZED'] }
-        },
-        include: { versions: { orderBy: { versionNumber: 'desc' }, take: 1 } }
-    })
+    // Simulación de extracción de obligaciones 
+    const allContracts = await ContractService.getContracts()
+    const contracts = allContracts.filter(c => ['EXECUTED', 'FINALIZED'].includes(c.status))
+
 
     const reminders = contracts.map(c => ({
         id: c.id,

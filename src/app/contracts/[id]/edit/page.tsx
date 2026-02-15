@@ -1,18 +1,18 @@
-import { prisma } from '@/lib/prisma'
+import { ContractService } from '@/lib/services/contractService'
+
 import { createNewVersion } from '@/app/actions'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 
 export default async function EditContractPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
-    const contract = await prisma.contract.findUnique({
-        where: { id },
-        include: { versions: { orderBy: { versionNumber: 'desc' }, take: 1 } }
-    })
+    const contract = await ContractService.getContractById(id)
+
 
     if (!contract) return notFound()
 
-    const currentContent = contract.versions[0]?.content || ''
+    const currentContent = contract.versions?.[0]?.content || ''
+
     const versionAction = createNewVersion.bind(null, contract.id)
 
     return (
@@ -24,7 +24,8 @@ export default async function EditContractPage({ params }: { params: Promise<{ i
             <div className="page-header">
                 <div>
                     <h1>Editar: {contract.title}</h1>
-                    <p>Creando nueva versión (v{contract.versions[0].versionNumber + 1})</p>
+                    <p>Creando nueva versión (v{(contract.versions?.[0]?.versionNumber || 0) + 1})</p>
+
                 </div>
             </div>
 

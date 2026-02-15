@@ -1,4 +1,3 @@
-import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import mammoth from 'mammoth'
@@ -7,6 +6,8 @@ import fs from 'fs-extra'
 import { finalizeContract, updateStatus } from '@/app/actions'
 import { EditorWrapper } from '@/components/editor/EditorWrapper'
 import ClientSignatureSection from '@/components/contracts/ClientSignatureSection'
+import { ContractService } from '@/lib/services/contractService'
+
 
 async function renderDocx(fileUrl: string) {
     try {
@@ -35,37 +36,22 @@ export default async function ContractPage({ params, searchParams }: any) {
     const { id } = await params
     const { versionId } = await searchParams
 
-    const contract = await prisma.contract.findUnique({
-        where: { id },
-        include: {
-            author: true,
-            assignedTo: true,
-            versions: {
-                include: {
-                    author: true,
-                    comments: {
-                        include: { author: true },
-                        orderBy: { createdAt: 'desc' }
-                    }
-                },
-                orderBy: { versionNumber: 'desc' }
-            },
-            activityLogs: {
-                include: { user: true },
-                orderBy: { createdAt: 'desc' }
-            }
-        }
-    })
+    const contract = await ContractService.getContractById(id)
 
     if (!contract) return notFound()
 
+    // Activity logs are now fetched separately or processed in Service
+    const activityLogs = await ContractService.getActivityLogs(id)
+
+
     const currentVersion = versionId
-        ? contract.versions.find((v: any) => v.id === versionId)
-        : contract.versions[0]
+        ? contract.versions?.find((v: any) => v.id === versionId)
+        : contract.versions?.[0]
 
     if (!currentVersion) return notFound()
 
-    const isLatest = currentVersion.id === contract.versions[0].id
+    const isLatest = currentVersion.id === contract.versions?.[0].id
+
 
     // Lógica de Renderizado: Preferir contenido editado sobre el archivo original
     let renderedContent = currentVersion.content
@@ -76,7 +62,8 @@ export default async function ContractPage({ params, searchParams }: any) {
         renderedContent = await renderDocx(currentVersion.fileUrl)
     }
 
-    const users = await prisma.user.findMany()
+    const users = await ContractService.getUsers()
+
 
     return (
         <div>
@@ -210,7 +197,8 @@ export default async function ContractPage({ params, searchParams }: any) {
                     <div className="card">
                         <h3 className="section-title" style={{ fontSize: 'var(--text-sm)' }}>Historial de Versiones</h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                            {contract.versions.map((version: any) => (
+                            {contract.versions?.map((version: any) => (
+
                                 <Link
                                     key={version.id}
                                     href={`/ contracts / ${id}?versionId = ${version.id} `}
@@ -237,10 +225,11 @@ export default async function ContractPage({ params, searchParams }: any) {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginTop: 'var(--space-4)' }}>
                                 <Link href={`/ contracts / ${id} /edit`} className="btn btn-sm" style={{ textAlign: 'center' }}>Nueva Versión</Link >
                                 {
-                                    contract.versions.length > 1 && (
+                                    (contract.versions?.length || 0) > 1 && (
                                         <Link href={`/contracts/${id}/compare`} className="btn btn-secondary btn-sm" style={{ textAlign: 'center' }}>Comparar Cambios</Link>
                                     )
                                 }
+
                             </div >
                         )}
                     </div >
@@ -249,7 +238,7 @@ export default async function ContractPage({ params, searchParams }: any) {
                     < div className="card" >
                         <h3 className="section-title" style={{ fontSize: 'var(--text-sm)' }}>Actividad</h3>
                         <div style={{ fontSize: 'var(--text-xs)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                            {contract.activityLogs.map((log: any) => (
+                            {activityLogs.map((log: any) => (
                                 <div key={log.id} style={{ borderBottom: '1px solid var(--border-default)', paddingBottom: 'var(--space-2)' }}>
                                     <span className="badge badge-primary" style={{ fontSize: '10px', marginRight: 'var(--space-2)' }}>{log.action}</span>
                                     <span style={{ color: 'var(--text-secondary)' }}>{log.details}</span>
@@ -260,6 +249,7 @@ export default async function ContractPage({ params, searchParams }: any) {
                                 </div>
                             ))}
                         </div>
+
                     </div >
 
                     {/* Comments */}
