@@ -1,7 +1,6 @@
 import { db as firestore, bucket } from '@/lib/firebase-admin';
-import { prisma } from '@/lib/prisma';
 
-// Interfaz para normalizar los datos entre Prisma y Firebase
+// Interfaz para normalizar los datos en Firebase
 export interface ContractData {
     id: string;
     title: string;
@@ -41,312 +40,188 @@ export interface TemplateData {
 
 
 export class ContractService {
-    private static useFirebase = true; // Forced true for web deployment
-
-
+    // Only Firebase remains
     static async getContracts(): Promise<ContractData[]> {
-        if (this.useFirebase) {
-
-            try {
-                const snapshot = await firestore.collection('contracts').orderBy('createdAt', 'desc').get();
-                return snapshot.docs.map(doc => {
-                    const data = doc.data();
-                    return {
-                        id: doc.id,
-                        title: data.title || 'Sin título',
-                        status: data.status || 'DRAFT',
-                        authorId: data.authorId || '',
-                        category: data.category || 'General',
-                        // Normalización para la UI
-                        author: { name: data.authorName || 'Desconocido' },
-                        createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
-                        updatedAt: data.updatedAt ? new Date(data.updatedAt) : new Date(),
-                        // Stub de versiones para evitar crash en lista y evitar N+1 queries
-                        versions: new Array(data.versionCount || 1).fill({})
-                    } as ContractData;
-                });
-
-
-            } catch (error) {
-                console.error('[ContractService] Error fetching contracts from Firebase:', error);
-                throw error;
-            }
-        }
-
-        return (await prisma.contract.findMany({
-            include: { author: true, versions: { orderBy: { versionNumber: 'desc' }, take: 1 } },
-            orderBy: { createdAt: 'desc' }
-        })) as unknown as ContractData[];
-
-    }
-
-    static async getContractById(id: string): Promise<ContractData | null> {
-        if (this.useFirebase) {
-
-            try {
-                const doc = await firestore.collection('contracts').doc(id).get();
-                if (!doc.exists) return null;
-                const data = doc.data()!;
-                const versions = await firestore.collection('contracts').doc(id).collection('versions').orderBy('versionNumber', 'desc').get();
+        try {
+            const snapshot = await firestore.collection('contracts').orderBy('createdAt', 'desc').get();
+            return snapshot.docs.map(doc => {
+                const data = doc.data();
                 return {
                     id: doc.id,
                     title: data.title || 'Sin título',
                     status: data.status || 'DRAFT',
                     authorId: data.authorId || '',
                     category: data.category || 'General',
-                    ...data,
                     author: { name: data.authorName || 'Desconocido' },
                     createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
                     updatedAt: data.updatedAt ? new Date(data.updatedAt) : new Date(),
-                    versions: versions.docs.map(v => {
-                        const vData = v.data();
-                        return {
-                            id: v.id,
-                            ...vData,
-                            createdAt: vData.createdAt ? new Date(vData.createdAt) : new Date()
-                        };
-                    })
+                    versions: new Array(data.versionCount || 1).fill({})
                 } as ContractData;
-
-            } catch (error) {
-                console.error(`[ContractService] Error fetching contract ${id} from Firebase:`, error);
-                throw error;
-            }
+            });
+        } catch (error) {
+            console.error('[ContractService] Error fetching contracts from Firebase:', error);
+            throw error;
         }
+    }
 
-        return (await prisma.contract.findUnique({
-            where: { id },
-            include: { versions: { orderBy: { versionNumber: 'desc' } }, activityLogs: true, assignedTo: true }
-        })) as unknown as ContractData | null;
-
+    static async getContractById(id: string): Promise<ContractData | null> {
+        try {
+            const doc = await firestore.collection('contracts').doc(id).get();
+            if (!doc.exists) return null;
+            const data = doc.data()!;
+            const versions = await firestore.collection('contracts').doc(id).collection('versions').orderBy('versionNumber', 'desc').get();
+            return {
+                id: doc.id,
+                title: data.title || 'Sin título',
+                status: data.status || 'DRAFT',
+                authorId: data.authorId || '',
+                category: data.category || 'General',
+                ...data,
+                author: { name: data.authorName || 'Desconocido' },
+                createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
+                updatedAt: data.updatedAt ? new Date(data.updatedAt) : new Date(),
+                versions: versions.docs.map(v => {
+                    const vData = v.data();
+                    return {
+                        id: v.id,
+                        ...vData,
+                        createdAt: vData.createdAt ? new Date(vData.createdAt) : new Date()
+                    };
+                })
+            } as ContractData;
+        } catch (error) {
+            console.error(`[ContractService] Error fetching contract ${id} from Firebase:`, error);
+            throw error;
+        }
     }
 
     static async createContract(data: { title: string; category?: string }, authorId: string, initialVersion: { content: string; fileUrl?: string | null; fileName?: string | null }) {
+        const user = await this.getUserById(authorId);
+        const contractRef = firestore.collection('contracts').doc();
+        const timestamp = new Date().toISOString();
 
-        // ALWAYS save to Prisma (Primary/Fallback)
-        const contract = await prisma.contract.create({
-            data: {
-                title: data.title,
-                status: 'DRAFT',
-                category: data.category || 'General',
-                authorId: authorId,
-                versions: {
-                    create: {
-                        content: initialVersion.content,
-                        versionNumber: 1,
-                        authorId: authorId,
-                        fileUrl: initialVersion.fileUrl,
-                        fileName: initialVersion.fileName
-                    }
-                }
-            },
-            include: { versions: true }
+        const contractData = {
+            title: data.title,
+            status: 'DRAFT',
+            category: data.category || 'General',
+            authorId: authorId,
+            authorName: user?.name || 'Sistema',
+            versionCount: 1,
+            createdAt: timestamp,
+            updatedAt: timestamp
+        };
+
+        await contractRef.set(contractData);
+
+        const versionId = firestore.collection('placeholder').doc().id; // Guid-like ID
+        await contractRef.collection('versions').doc(versionId).set({
+            content: initialVersion.content,
+            versionNumber: 1,
+            authorId: authorId,
+            fileUrl: initialVersion.fileUrl,
+            fileName: initialVersion.fileName,
+            createdAt: timestamp
         });
 
-        // Sync with Firebase if configured
-        if (this.useFirebase) {
-            try {
-                const author = await prisma.user.findUnique({ where: { id: authorId } });
-                const contractRef = firestore.collection('contracts').doc(contract.id);
-                await contractRef.set({
-                    title: contract.title,
-                    status: contract.status,
-                    category: contract.category,
-                    authorId: contract.authorId,
-                    authorName: author?.name || 'Sistema',
-                    versionCount: 1,
-                    createdAt: contract.createdAt.toISOString(),
-                    updatedAt: contract.updatedAt.toISOString()
-                });
-
-
-
-                const firstVersion = contract.versions[0];
-                await contractRef.collection('versions').doc(firstVersion.id).set({
-                    content: firstVersion.content,
-                    versionNumber: firstVersion.versionNumber,
-                    authorId: firstVersion.authorId,
-                    fileUrl: firstVersion.fileUrl,
-                    fileName: firstVersion.fileName,
-                    createdAt: firstVersion.createdAt.toISOString()
-                });
-
-                console.log(`[ContractService] Contract ${contract.id} synced with Firebase.`);
-            } catch (error) {
-                console.error('[ContractService] Error syncing contract to Firebase:', error);
-                // We don't throw here to avoid failing since Prisma succeeded, 
-                // but in a strict system we might want to.
-            }
-        }
-
-        return contract;
+        return { id: contractRef.id, ...contractData, versions: [{ id: versionId }] };
     }
 
     static async createVersion(contractId: string, authorId: string, versionData: { content: string; fileUrl?: string | null; fileName?: string | null }) {
+        const contractRef = firestore.collection('contracts').doc(contractId);
+        const doc = await contractRef.get();
+        if (!doc.exists) throw new Error('Contract not found');
 
-        const contract = await prisma.contract.findUnique({
-            where: { id: contractId },
-            include: { versions: true }
+        const data = doc.data()!;
+        const nextVersionNumber = (data.versionCount || 0) + 1;
+        const timestamp = new Date().toISOString();
+
+        await contractRef.update({
+            status: 'REVIEW',
+            versionCount: nextVersionNumber,
+            updatedAt: timestamp
         });
 
-        if (!contract) throw new Error('Contract not found');
-
-        const nextVersionNumber = contract.versions.length + 1;
-
-        const newVersion = await prisma.contractVersion.create({
-            data: {
-                contractId,
-                content: versionData.content,
-                versionNumber: nextVersionNumber,
-                authorId,
-                fileUrl: versionData.fileUrl,
-                fileName: versionData.fileName
-            }
+        const versionRef = contractRef.collection('versions').doc();
+        await versionRef.set({
+            content: versionData.content,
+            versionNumber: nextVersionNumber,
+            authorId: authorId,
+            fileUrl: versionData.fileUrl,
+            fileName: versionData.fileName,
+            createdAt: timestamp
         });
 
-        await prisma.contract.update({
-            where: { id: contractId },
-            data: { status: 'REVIEW' }
-        });
-
-        if (this.useFirebase) {
-            try {
-                const contractRef = firestore.collection('contracts').doc(contractId);
-                await contractRef.update({
-                    status: 'REVIEW',
-                    versionCount: nextVersionNumber,
-                    updatedAt: new Date().toISOString()
-                });
-
-
-                await contractRef.collection('versions').doc(newVersion.id).set({
-                    content: newVersion.content,
-                    versionNumber: newVersion.versionNumber,
-                    authorId: newVersion.authorId,
-                    fileUrl: newVersion.fileUrl,
-                    fileName: newVersion.fileName,
-                    createdAt: newVersion.createdAt.toISOString()
-                });
-            } catch (error) {
-                console.error('[ContractService] Error syncing version to Firebase:', error);
-            }
-        }
-
-        return newVersion;
+        return { id: versionRef.id, versionNumber: nextVersionNumber };
     }
 
-    static async addComment(versionId: string, authorId: string, content: string) {
-        const comment = await prisma.comment.create({
-            data: {
-                content,
-                versionId,
-                authorId
-            },
-            include: { version: true }
+    static async addComment(versionId: string, authorId: string, content: string, contractId?: string) {
+        if (!contractId) throw new Error('contractId is required for Firebase version of addComment');
+
+        const commentRef = firestore
+            .collection('contracts')
+            .doc(contractId)
+            .collection('versions')
+            .doc(versionId)
+            .collection('comments')
+            .doc();
+
+        const commentData = {
+            content,
+            authorId,
+            createdAt: new Date().toISOString()
+        };
+
+        await commentRef.set(commentData);
+
+        // Also add to global comments collection for "Recent Activity" feed if index exists
+        await firestore.collection('comments').doc(commentRef.id).set({
+            ...commentData,
+            contractId,
+            versionId
         });
 
-        if (this.useFirebase) {
-            try {
-                await firestore
-                    .collection('contracts')
-                    .doc(comment.version.contractId)
-                    .collection('versions')
-                    .doc(versionId)
-                    .collection('comments')
-                    .doc(comment.id)
-                    .set({
-                        content: comment.content,
-                        authorId: comment.authorId,
-                        createdAt: comment.createdAt.toISOString()
-                    });
-            } catch (error) {
-                console.error('[ContractService] Error syncing comment to Firebase:', error);
-            }
-        }
-
-        return comment;
+        return { id: commentRef.id, ...commentData };
     }
 
     static async updateStatus(contractId: string, status: string) {
-        const contract = await prisma.contract.update({
-            where: { id: contractId },
-            data: { status }
+        const timestamp = new Date().toISOString();
+        await firestore.collection('contracts').doc(contractId).update({
+            status,
+            updatedAt: timestamp
         });
-
-        if (this.useFirebase) {
-            try {
-                await firestore.collection('contracts').doc(contractId).update({
-                    status,
-                    updatedAt: contract.updatedAt.toISOString()
-                });
-            } catch (error) {
-                console.error('[ContractService] Error updating status in Firebase:', error);
-            }
-        }
-
-        return contract;
+        return { id: contractId, status, updatedAt: timestamp };
     }
 
     static async assignContract(contractId: string, assignedToId: string) {
-        const contract = await prisma.contract.update({
-            where: { id: contractId },
-            data: { assignedToId },
-            include: { assignedTo: true }
+        const timestamp = new Date().toISOString();
+        await firestore.collection('contracts').doc(contractId).update({
+            assignedToId,
+            updatedAt: timestamp
         });
-
-        if (this.useFirebase) {
-            try {
-                await firestore.collection('contracts').doc(contractId).update({
-                    assignedToId,
-                    updatedAt: contract.updatedAt.toISOString()
-                });
-            } catch (error) {
-                console.error('[ContractService] Error assigning contract in Firebase:', error);
-            }
-        }
-
-        return contract;
+        return { id: contractId, assignedToId, updatedAt: timestamp };
     }
 
     static async updateContractContent(id: string, content: string) {
-        const contract = await prisma.contract.findUnique({
-            where: { id },
-            include: { versions: { orderBy: { versionNumber: 'desc' }, take: 1 } }
-        });
+        // Find latest version
+        const versions = await firestore.collection('contracts').doc(id).collection('versions').orderBy('versionNumber', 'desc').limit(1).get();
+        if (versions.empty) throw new Error('No versions found');
 
-        if (!contract) throw new Error('Contract not found');
-        const currentVersion = contract.versions[0];
+        const latestVersion = versions.docs[0];
+        const timestamp = new Date().toISOString();
 
-        const updatedVersion = await prisma.contractVersion.update({
-            where: { id: currentVersion.id },
-            data: { content }
-        });
+        await firestore.collection('contracts').doc(id).update({ updatedAt: timestamp });
+        await latestVersion.ref.update({ content });
 
-        if (this.useFirebase) {
-            try {
-                const contractRef = firestore.collection('contracts').doc(id);
-                await contractRef.update({ updatedAt: new Date().toISOString() });
-                await contractRef.collection('versions').doc(currentVersion.id).update({
-                    content
-                });
-            } catch (error) {
-                console.error('[ContractService] Error updating content in Firebase:', error);
-            }
-        }
-
-        return updatedVersion;
+        return { id: latestVersion.id, content };
     }
 
     static async signContract(contractId: string, signatureDataUrl: string) {
         const timestamp = new Date().toISOString();
-
-        if (this.useFirebase) {
-            await firestore.collection('contracts').doc(contractId).update({
-                status: 'EXECUTED',
-                signature: signatureDataUrl,
-                signedAt: timestamp
-            });
-        }
+        await firestore.collection('contracts').doc(contractId).update({
+            status: 'EXECUTED',
+            signature: signatureDataUrl,
+            signedAt: timestamp
+        });
         return { success: true, signedAt: timestamp };
     }
 
@@ -428,13 +303,11 @@ export class ContractService {
         return snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
-            // Ensure UI compatibility
             user: { name: doc.data().userName || 'Sistema' }
         }));
     }
 
     static async getRecentComments(limit: number = 5) {
-
         try {
             const snapshot = await firestore.collectionGroup('comments').orderBy('createdAt', 'desc').limit(limit).get();
             return snapshot.docs.map(doc => {
@@ -452,5 +325,3 @@ export class ContractService {
         }
     }
 }
-
-
