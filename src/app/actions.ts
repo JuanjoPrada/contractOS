@@ -3,8 +3,6 @@
 import { revalidatePath } from 'next/cache'
 
 import { redirect } from 'next/navigation'
-import path from 'path'
-import fs from 'fs-extra'
 import {
     createContractSchema,
     createVersionSchema,
@@ -48,15 +46,7 @@ async function saveFile(file: File): Promise<{ url: string; name: string }> {
         }
     } catch (error) {
         console.error('[Firebase Storage] Error uploading file:', error)
-        // Fallback to local (only works in local dev)
-        const relativePath = path.join('uploads', fileName)
-        const absolutePath = path.join(process.cwd(), 'public', relativePath)
-        await fs.ensureDir(path.dirname(absolutePath))
-        await fs.writeFile(absolutePath, buffer)
-        return {
-            url: `/${relativePath.replace(/\\/g, '/')}`,
-            name: file.name
-        }
+        throw new Error('Error al subir el archivo. Verifica la configuración de Firebase Storage.')
     }
 }
 
@@ -123,10 +113,7 @@ export async function createNewVersion(id: string, formData: FormData) {
     if (!id) throw new Error('Contract ID is required')
 
     const user = await getOrCreateUser()
-    const contract = await prisma.contract.findUnique({
-        where: { id },
-        include: { versions: true }
-    })
+    const contract = await ContractService.getContractById(id)
 
     if (!contract) throw new Error('Contract not found')
     if (contract.status === 'FINALIZED') throw new Error('Cannot add versions to a finalized contract')
@@ -149,16 +136,18 @@ export async function createNewVersion(id: string, formData: FormData) {
 }
 
 
-export async function addComment(versionId: string, content: string) {
+export async function addComment(versionId: string, content: string, contractId?: string) {
     const data = addCommentSchema.parse({ content })
     const user = await getOrCreateUser()
 
-    const comment = await ContractService.addComment(versionId, user.id, data.content)
+    await ContractService.addComment(versionId, user.id, data.content, contractId)
 
-
-    await logActivity(comment.version.contractId, 'COMMENTED', `Comentario añadido a la v${comment.version.versionNumber}`)
-
-    revalidatePath('/contracts/[id]')
+    if (contractId) {
+        await logActivity(contractId, 'COMMENTED', `Comentario añadido`)
+        revalidatePath(`/contracts/${contractId}`)
+    } else {
+        revalidatePath('/contracts/[id]')
+    }
 }
 
 export async function assignContract(contractId: string, formData: FormData) {
@@ -244,25 +233,30 @@ export async function signContract(contractId: string, signatureDataUrl: string)
 
 
 export async function saveFirebaseConfig(webConfig: Record<string, any>, serviceAccount: Record<string, any>) {
-
+    // In production (Vercel), environment variables must be set via the Vercel dashboard
+    // or the v0 sidebar (Vars section). This action validates the config format.
     try {
-        const envContent = `
-# Firebase Client (Público)
-NEXT_PUBLIC_FIREBASE_API_KEY=${webConfig.apiKey || ''}
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${webConfig.authDomain || ''}
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=${webConfig.projectId || ''}
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${webConfig.storageBucket || ''}
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${webConfig.messagingSenderId || ''}
-NEXT_PUBLIC_FIREBASE_APP_ID=${webConfig.appId || ''}
+        // Validate the config objects have required fields
+        if (!webConfig.apiKey || !webConfig.projectId) {
+            return { success: false, error: 'La configuración web de Firebase requiere al menos apiKey y projectId.' }
+        }
+        if (!serviceAccount.project_id || !serviceAccount.private_key) {
+            return { success: false, error: 'El Service Account requiere project_id y private_key.' }
+        }
 
-# Firebase Admin (Servidor)
-FIREBASE_SERVICE_ACCOUNT='${JSON.stringify(serviceAccount)}'
-`.trim()
-
-        const envPath = path.join(process.cwd(), '.env.local')
-        await fs.writeFile(envPath, envContent)
-
-        return { success: true }
+        return {
+            success: true,
+            message: 'Configuración validada. Configura las variables de entorno en el panel de Vercel.',
+            envVars: {
+                NEXT_PUBLIC_FIREBASE_API_KEY: webConfig.apiKey,
+                NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: webConfig.authDomain,
+                NEXT_PUBLIC_FIREBASE_PROJECT_ID: webConfig.projectId,
+                NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: webConfig.storageBucket,
+                NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: webConfig.messagingSenderId,
+                NEXT_PUBLIC_FIREBASE_APP_ID: webConfig.appId,
+                FIREBASE_SERVICE_ACCOUNT: JSON.stringify(serviceAccount),
+            }
+        }
     } catch (error: any) {
         return { success: false, error: error.message }
     }

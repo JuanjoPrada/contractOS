@@ -1,25 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import mammoth from 'mammoth'
-import path from 'path'
-import fs from 'fs-extra'
-import { finalizeContract, updateStatus } from '@/app/actions'
 import { EditorWrapper } from '@/components/editor/EditorWrapper'
 import ClientSignatureSection from '@/components/contracts/ClientSignatureSection'
 import { ContractService } from '@/lib/services/contractService'
-
-
-async function renderDocx(fileUrl: string) {
-    try {
-        const absolutePath = path.join(process.cwd(), 'public', fileUrl)
-        const buffer = await fs.readFile(absolutePath)
-        const result = await mammoth.convertToHtml({ buffer })
-        return result.value
-    } catch (error) {
-        console.error('Error rendering docx:', error)
-        return '<p>Error al renderizar el archivo Word.</p>'
-    }
-}
 
 function getStatusBadge(status: string) {
     const map: Record<string, string> = {
@@ -54,13 +37,7 @@ export default async function ContractPage({ params, searchParams }: any) {
 
 
     // Lógica de Renderizado: Preferir contenido editado sobre el archivo original
-    let renderedContent = currentVersion.content
-    let isEditingRealFile = !!currentVersion.fileUrl
-
-    // Si el contenido está vacío pero hay un archivo, lo renderizamos
-    if (!renderedContent && currentVersion.fileUrl) {
-        renderedContent = await renderDocx(currentVersion.fileUrl)
-    }
+    const renderedContent = currentVersion.content || '<p>Sin contenido disponible. Si se subió un archivo, descárgalo usando el botón de descarga.</p>'
 
     const users = await ContractService.getUsers()
 
@@ -213,7 +190,7 @@ export default async function ContractPage({ params, searchParams }: any) {
                                         fontWeight: version.id === currentVersion.id ? '600' : '400',
                                     }}
                                 >
-                                    v{version.versionNumber} — {version.author.name}
+                                    v{version.versionNumber} — {version.author?.name || version.authorName || 'Usuario'}
                                     <br />
                                     <small style={{ color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>
                                         {version.createdAt.toLocaleString('es-ES')}
@@ -277,7 +254,7 @@ export default async function ContractPage({ params, searchParams }: any) {
                                 <form action={async (formData) => {
                                     'use server'
                                     const { addComment } = await import('@/app/actions')
-                                    await addComment(currentVersion.id, formData.get('content') as string)
+                                    await addComment(currentVersion.id, formData.get('content') as string, id)
                                 }} style={{ marginTop: 'var(--space-3)' }}>
                                     <textarea name="content" placeholder="Escribe un comentario..." rows={3} required style={{ marginBottom: 'var(--space-2)' }} />
                                     <button type="submit" className="btn btn-sm" style={{ width: '100%' }}>Enviar Comentario</button>

@@ -1,7 +1,13 @@
 import * as admin from 'firebase-admin';
 
-function getAdminApp() {
-    if (admin.apps.length > 0) return admin.apps[0]!;
+let _app: admin.app.App | null = null;
+
+function getAdminApp(): admin.app.App {
+    if (_app) return _app;
+    if (admin.apps.length > 0) {
+        _app = admin.apps[0]!;
+        return _app;
+    }
 
     console.log('[Firebase Admin] Initializing Firebase Admin...');
 
@@ -18,21 +24,24 @@ function getAdminApp() {
                 serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
             }
 
-            return admin.initializeApp({
+            _app = admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount),
                 storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${serviceAccount.project_id}.firebasestorage.app`
             });
+            return _app;
         } catch (error) {
             console.error('[Firebase Admin] Error parsing service account:', error);
         }
     }
 
     console.warn('[Firebase Admin] No service account found. Using demo mode.');
-    return admin.initializeApp({
-        projectId: 'contract-os-demo'
+    _app = admin.initializeApp({
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'contract-os-demo'
     });
+    return _app;
 }
 
+// Lazy getters to avoid module-level initialization crashes during build
 export const getDb = () => {
     const app = getAdminApp();
     return admin.firestore(app);
@@ -43,12 +52,27 @@ export const getBucket = () => {
     return admin.storage(app).bucket();
 };
 
-export const getAuth = () => {
+export const getAdminAuth = () => {
     const app = getAdminApp();
     return admin.auth(app);
 };
 
-export const db = getDb();
-export const bucket = getBucket();
-export const auth = getAuth();
+// Lazy proxy objects that initialize on first access
+let _db: admin.firestore.Firestore | null = null;
+let _bucket: ReturnType<typeof admin.storage.prototype.bucket> | null = null;
+
+export const db = new Proxy({} as admin.firestore.Firestore, {
+    get(_target, prop) {
+        if (!_db) _db = getDb();
+        return (_db as any)[prop];
+    }
+});
+
+export const bucket = new Proxy({} as ReturnType<typeof admin.storage.prototype.bucket>, {
+    get(_target, prop) {
+        if (!_bucket) _bucket = getBucket();
+        return (_bucket as any)[prop];
+    }
+});
+
 export const firestore = db;
