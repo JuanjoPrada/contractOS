@@ -28,8 +28,9 @@ export default async function Dashboard() {
   const finalizedCount = recentContracts.filter((c: any) => c.status === 'FINALIZED').length
   const executedCount = recentContracts.filter((c: any) => c.status === 'EXECUTED').length
 
-  const recentComments: any[] = [] // TODO: Adaptar comentarios a Firebase si es necesario
+  const recentComments = await ContractService.getRecentComments(5)
   const assignedContracts = recentContracts.filter((c: any) => c.status === 'REVIEW').slice(0, 5)
+
   const dashboardRecent = recentContracts.slice(0, 5)
 
   return (
@@ -126,10 +127,11 @@ export default async function Dashboard() {
                       <Link href={`/contracts/${contract.id}`}>{contract.title}</Link>
                     </div>
                     <div className={styles.miniCardMeta}>
-                      <span>Por {contract.author.name}</span>
+                      <span>Por {contract.author?.name || 'Desconocido'}</span>
                       <span>·</span>
-                      <span>{contract.updatedAt.toLocaleDateString('es-ES')}</span>
+                      <span>{contract.updatedAt?.toLocaleDateString?.('es-ES') || 'Fecha no disponible'}</span>
                     </div>
+
                   </div>
                   <span className={getStatusBadge(contract.status)}>{contract.status}</span>
                 </div>
@@ -153,12 +155,10 @@ export default async function Dashboard() {
                 {recentComments.map((comment: any) => (
                   <div key={comment.id} className={styles.activityCard}>
                     <div className={styles.activityAuthor}>
-                      <strong>{comment.author.name}</strong> comentó en{' '}
-                      <Link href={`/contracts/${comment.version.contractId}?versionId=${comment.versionId}`}>
-                        {comment.version.contract.title}
-                      </Link>
+                      <strong>{comment.author.name}</strong> comentó
                     </div>
                     <div className={styles.activityQuote}>"{comment.content}"</div>
+
                     <div className={styles.activityTime}>
                       {comment.createdAt.toLocaleString('es-ES')}
                     </div>

@@ -1,4 +1,5 @@
-import { prisma } from '@/lib/prisma'
+import { ContractService } from '@/lib/services/contractService'
+
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import * as Diff from 'diff'
@@ -7,20 +8,20 @@ export default async function ComparePage({ params, searchParams }: { params: Pr
     const { id } = await params
     const { v1, v2 } = await searchParams
 
-    const contract = await prisma.contract.findUnique({
-        where: { id },
-        include: { versions: { orderBy: { versionNumber: 'desc' } } }
-    })
+    const contract = await ContractService.getContractById(id)
 
-    if (!contract || contract.versions.length < 2) return notFound()
+    if (!contract || (contract.versions?.length || 0) < 2) return notFound()
+
 
     const version1 = v1
-        ? contract.versions.find((v: any) => v.id === v1)
-        : contract.versions[1]
+        ? contract.versions?.find((v: any) => v.id === v1)
+        : contract.versions?.[1]
+
 
     const version2 = v2
-        ? contract.versions.find((v: any) => v.id === v2)
-        : contract.versions[0]
+        ? contract.versions?.find((v: any) => v.id === v2)
+        : contract.versions?.[0]
+
 
     if (!version1 || !version2) return <div>Versiones no encontradas</div>
 

@@ -1,11 +1,10 @@
-import { prisma } from '@/lib/prisma'
+import { ContractService } from '@/lib/services/contractService'
 import { createTemplate, deleteTemplate } from '../actions'
 import Link from 'next/link'
 
 export default async function TemplatesPage() {
-    const templates = await prisma.template.findMany({
-        orderBy: { createdAt: 'desc' }
-    })
+    const templates = await ContractService.getTemplates()
+
 
     return (
         <div>
