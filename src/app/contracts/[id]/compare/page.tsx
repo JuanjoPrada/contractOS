@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import * as Diff from 'diff'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ComparePage({ params, searchParams }: { params: Promise<{ id: string }>, searchParams: Promise<{ v1: string, v2: string }> }) {
     const { id } = await params
     const { v1, v2 } = await searchParams

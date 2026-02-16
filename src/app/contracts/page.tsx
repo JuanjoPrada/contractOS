@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { ContractService } from '@/lib/services/contractService'
 import styles from './page.module.css'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ q?: string, status?: string }> }) {
     const { q, status } = await searchParams
 

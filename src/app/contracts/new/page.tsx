@@ -1,6 +1,8 @@
 import { createContract, getTemplates } from '../../actions'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default async function NewContractPage() {
     const templates = await getTemplates()
 

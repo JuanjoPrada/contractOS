@@ -2,6 +2,8 @@ import { ContractService } from '@/lib/services/contractService'
 import { createTemplate, deleteTemplate } from '../actions'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default async function TemplatesPage() {
     const templates = await ContractService.getTemplates()
 
