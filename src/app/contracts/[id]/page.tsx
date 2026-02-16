@@ -277,7 +277,7 @@ export default async function ContractPage({ params, searchParams }: any) {
                                 <form action={async (formData) => {
                                     'use server'
                                     const { addComment } = await import('@/app/actions')
-                                    await addComment(currentVersion.id, formData.get('content') as string)
+                                    await addComment(contract.id, currentVersion.id, currentVersion.versionNumber, formData.get('content') as string)
                                 }} style={{ marginTop: 'var(--space-3)' }}>
                                     <textarea name="content" placeholder="Escribe un comentario..." rows={3} required style={{ marginBottom: 'var(--space-2)' }} />
                                     <button type="submit" className="btn btn-sm" style={{ width: '100%' }}>Enviar Comentario</button>

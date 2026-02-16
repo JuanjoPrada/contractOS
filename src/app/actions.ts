@@ -146,24 +146,26 @@ export async function createNewVersion(id: string, formData: FormData) {
 }
 
 
-export async function addComment(versionId: string, content: string) {
+export async function addComment(contractId: string, versionId: string, versionNumber: number, content: string) {
     const data = addCommentSchema.parse({ content })
     const user = await getOrCreateUser()
 
-    const comment = await ContractService.addComment(versionId, user.id, data.content)
+    // Pass contractId to the service
+    const comment = await ContractService.addComment(versionId, user.id, data.content, contractId)
 
+    // Use passed variables for logging instead of trying to access nested properties that don't exist
+    await logActivity(contractId, 'COMMENTED', `Comentario añadido a la v${versionNumber}`)
 
-    await logActivity(comment.version.contractId, 'COMMENTED', `Comentario añadido a la v${comment.version.versionNumber}`)
-
-    revalidatePath('/contracts/[id]')
+    revalidatePath(`/contracts/${contractId}`)
 }
 
 export async function assignContract(contractId: string, formData: FormData) {
     const userId = formData.get('userId') as string
 
     const updatedContract = await ContractService.assignContract(contractId, userId)
+    const assignedUser = await ContractService.getUserById(userId)
 
-    await logActivity(contractId, 'ASSIGNED', `Contrato asignado a ${updatedContract.assignedTo?.name || 'desconocido'}`)
+    await logActivity(contractId, 'ASSIGNED', `Contrato asignado a ${assignedUser?.name || 'desconocido'}`)
 
     revalidatePath(`/contracts/${contractId}`)
 }
