@@ -2,6 +2,8 @@ import { ContractService } from '@/lib/services/contractService'
 import styles from '@/app/page.module.css'
 import { Calendar, Bell, AlertTriangle, Clock } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export default async function RemindersPage() {
     // Simulación de extracción de obligaciones 
     const allContracts = await ContractService.getContracts()
