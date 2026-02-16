@@ -154,9 +154,7 @@ export class ContractService {
         return { id: versionRef.id, versionNumber: nextVersionNumber };
     }
 
-    static async addComment(versionId: string, authorId: string, content: string, contractId?: string) {
-        if (!contractId) throw new Error('contractId is required for Firebase version of addComment');
-
+    static async addComment(versionId: string, authorId: string, content: string, contractId: string) {
         const commentRef = firestore
             .collection('contracts')
             .doc(contractId)
@@ -174,13 +172,17 @@ export class ContractService {
         await commentRef.set(commentData);
 
         // Also add to global comments collection for "Recent Activity" feed if index exists
-        await firestore.collection('comments').doc(commentRef.id).set({
-            ...commentData,
-            contractId,
-            versionId
-        });
+        try {
+            await firestore.collection('comments').doc(commentRef.id).set({
+                ...commentData,
+                contractId,
+                versionId
+            });
+        } catch (e) {
+            console.warn('[ContractService] Error syncing to global comments:', e);
+        }
 
-        return { id: commentRef.id, ...commentData };
+        return { id: commentRef.id, ...commentData, contractId, versionId };
     }
 
     static async updateStatus(contractId: string, status: string) {

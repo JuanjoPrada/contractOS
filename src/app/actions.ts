@@ -123,10 +123,7 @@ export async function createNewVersion(id: string, formData: FormData) {
     if (!id) throw new Error('Contract ID is required')
 
     const user = await getOrCreateUser()
-    const contract = await prisma.contract.findUnique({
-        where: { id },
-        include: { versions: true }
-    })
+    const contract = await ContractService.getContractById(id)
 
     if (!contract) throw new Error('Contract not found')
     if (contract.status === 'FINALIZED') throw new Error('Cannot add versions to a finalized contract')
