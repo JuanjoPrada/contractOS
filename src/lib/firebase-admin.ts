@@ -40,7 +40,8 @@ export const getDb = () => {
 
 export const getBucket = () => {
     const app = getAdminApp();
-    return admin.storage(app).bucket();
+    const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || `${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.appspot.com` || 'contract-os-demo.appspot.com';
+    return admin.storage(app).bucket(bucketName);
 };
 
 export const getAuth = () => {
